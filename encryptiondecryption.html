@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Encrypt/Decrypt Text</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js"></script>
+    <script>
+        function handleText(action) {
+            const password = document.getElementById('password').value;
+            const text = document.getElementById('text').value;
+
+            if (!password || !text) {
+                alert("Please fill in both the password and text fields.");
+                return;
+            }
+
+            if (action === 'encrypt') {
+                const encryptedText = encryptText(password, text);
+                document.getElementById('result').textContent = "Encrypted Text: " + encryptedText;
+            } else if (action === 'decrypt') {
+                try {
+                    const decryptedText = decryptText(password, text);
+                    document.getElementById('result').textContent = "Decrypted Text: " + decryptedText;
+                } catch (e) {
+                    document.getElementById('result').textContent = "Decryption failed. Ensure you entered the correct password and encrypted text.";
+                }
+            }
+        }
+
+        function encryptText(password, text) {
+            const key = CryptoJS.enc.Utf8.parse(password);
+            const iv = CryptoJS.lib.WordArray.random(8); // DES uses an 8-byte IV
+            const encrypted = CryptoJS.DES.encrypt(text, key, {
+                iv: iv,
+                mode: CryptoJS.mode.CBC,
+                padding: CryptoJS.pad.Pkcs7
+            });
+
+            // Combine IV with the encrypted data
+            return CryptoJS.enc.Base64.stringify(iv.concat(encrypted.ciphertext));
+        }
+
+        function decryptText(password, encryptedText) {
+            const key = CryptoJS.enc.Utf8.parse(password);
+            const encryptedData = CryptoJS.enc.Base64.parse(encryptedText);
+
+            // Extract IV and the actual encrypted data
+            const iv = CryptoJS.lib.WordArray.create(encryptedData.words.slice(0, 2)); // 8 bytes = 2 words
+            const ciphertext = CryptoJS.lib.WordArray.create(encryptedData.words.slice(2));
+
+            const decrypted = CryptoJS.DES.decrypt(
+                { ciphertext: ciphertext },
+                key,
+                { iv: iv, mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 }
+            );
+
+            return decrypted.toString(CryptoJS.enc.Utf8);
+        }
+    </script>
+</head>
+<body>
+    <h1>Encrypt/Decrypt Text</h1>
+    <label for="password">Password:</label>
+    <input type="password" id="password"><br><br>
+
+    <label for="text">Text:</label>
+    <input type="text" id="text"><br><br>
+
+    <button onclick="handleText('encrypt')">Encrypt</button>
+    <button onclick="handleText('decrypt')">Decrypt</button>
+
+    <p id="result"></p>
+</body>
+</html>
